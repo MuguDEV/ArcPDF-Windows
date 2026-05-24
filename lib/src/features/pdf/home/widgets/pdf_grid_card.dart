@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import 'dart:io';
+
 import '../../../settings/settings_controller.dart';
 import '../../application/pdf_library_controller.dart';
 import '../../domain/pdf_file_item.dart';
@@ -109,25 +111,39 @@ class _PdfGridCardState extends ConsumerState<PdfGridCard> {
                   Positioned(
                     bottom: 4,
                     right: 4,
-                    child: IconButton(
-                      icon: const Icon(HugeIcons.strokeRoundedEdit02),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(HugeIcons.strokeRoundedMoreHorizontal),
                       color: Colors.white.withValues(alpha: 0.8),
                       iconSize: 20,
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.black.withValues(alpha: 0.25),
                         padding: const EdgeInsets.all(8),
                       ),
-                      onPressed: () async {
-                        final newName = await showRenameDialog(context, widget.item.name);
-                        if (newName != null && newName.isNotEmpty && mounted) {
-                          final success = await ref.read(pdfLibraryControllerProvider.notifier).renameFile(widget.item, newName);
-                          if (!success && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Failed to rename file.')),
-                            );
+                      onSelected: (value) async {
+                        if (value == 'rename') {
+                          final newName = await showRenameDialog(context, widget.item.name);
+                          if (newName != null && newName.isNotEmpty && mounted) {
+                            final success = await ref.read(pdfLibraryControllerProvider.notifier).renameFile(widget.item, newName);
+                            if (!success && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Failed to rename file.')),
+                              );
+                            }
+                          }
+                        } else if (value == 'show_folder') {
+                          if (Platform.isWindows) {
+                            Process.run('explorer.exe', ['/select,', widget.item.path]);
+                          } else if (Platform.isMacOS) {
+                            Process.run('open', ['-R', widget.item.path]);
+                          } else if (Platform.isLinux) {
+                            Process.run('xdg-open', [File(widget.item.path).parent.path]);
                           }
                         }
                       },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                        const PopupMenuItem(value: 'show_folder', child: Text('Show in Folder')),
+                      ],
                     ),
                   ),
                 ],
