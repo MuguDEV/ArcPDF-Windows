@@ -11,10 +11,6 @@ import '../application/pdf_library_controller.dart';
 import '../domain/pdf_file_item.dart';
 import '../viewer/pdf_viewer_screen.dart';
 import 'widgets/pdf_card.dart';
-import 'dart:io';
-import 'package:window_manager/window_manager.dart';
-import 'package:desktop_drop/desktop_drop.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 
 import 'widgets/pdf_grid_card.dart';
@@ -78,52 +74,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _searchFocusNode.requestFocus();
           setState(() => _searchActive = true);
         },
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
-          _openFilePicker(context, ctrl);
-        },
       },
       child: Focus(
       autofocus: true,
-      child: DropTarget(
-      onDragDone: (detail) async {
-        if (detail.files.isNotEmpty) {
-          final file = detail.files.first;
-          if (file.path.toLowerCase().endsWith('.pdf')) {
-            final fileEntity = File(file.path);
-            final pdfItem = PdfFileItem.fromFile(fileEntity, isEncrypted: false, isCorrupted: false);
-
-            await ctrl.markRecent(pdfItem);
-            if (!context.mounted) return;
-            await Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PdfViewerScreen(item: pdfItem))
-            );
-          }
-        }
-      },
       child: Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
-          ? PreferredSize(
-              preferredSize: const Size.fromHeight(36),
-              child: DragToMoveArea(
-                child: Container(
-                  height: 36,
-                  color: theme.colorScheme.surface,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      const Text('ArcPDF', style: TextStyle(fontSize: 12)),
-                      const Spacer(),
-                      WindowCaption(
-                        brightness: theme.brightness,
-                        backgroundColor: Colors.transparent,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          : null,
       floatingActionButton: _showScrollToTop
           ? Padding(
               padding: const EdgeInsets.only(bottom: 90.0), // Elevate above the bottom navigation bar
@@ -169,9 +124,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               offset: const Offset(0, 48),
               onSelected: (value) {
                 switch (value) {
-                  case 'open_file':
-                    _openFilePicker(context, ctrl);
-                    break;
                   case 'refresh':
                     ctrl.refresh();
                     break;
@@ -200,17 +152,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               itemBuilder: (context) {
                 final state = ref.read(pdfLibraryControllerProvider);
                 return [
-                  const PopupMenuItem(
-                    value: 'open_file',
-                    child: Row(
-                      children: [
-                        Icon(HugeIcons.strokeRoundedFolderOpen),
-                        SizedBox(width: 12),
-                        Text('Open File...'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'refresh',
                     child: Row(
@@ -463,7 +404,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     ),
     ),
-    ),
     );
   }
 
@@ -498,24 +438,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             MaterialPageRoute(builder: (_) => PdfViewerScreen(item: item)));
       },
     );
-  }
-
-  Future<void> _openFilePicker(BuildContext context, PdfLibraryController ctrl) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!;
-      final fileEntity = File(path);
-      final pdfItem = PdfFileItem.fromFile(fileEntity, isEncrypted: false, isCorrupted: false);
-      await ctrl.markRecent(pdfItem);
-      if (context.mounted) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PdfViewerScreen(item: pdfItem)),
-        );
-      }
-    }
   }
 
   Widget _buildGridItem(
