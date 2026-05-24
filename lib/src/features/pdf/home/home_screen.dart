@@ -10,7 +10,6 @@ import '../../settings/settings_controller.dart';
 import '../application/pdf_library_controller.dart';
 import '../domain/pdf_file_item.dart';
 import '../viewer/pdf_viewer_screen.dart';
-import 'permission_screen.dart';
 import 'widgets/pdf_card.dart';
 import 'widgets/pdf_grid_card.dart';
 import 'widgets/pdf_card_shimmer.dart';
@@ -53,8 +52,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final loading =
         ref.watch(pdfLibraryControllerProvider.select((s) => s.loading));
-    final permissionStatus = ref
-        .watch(pdfLibraryControllerProvider.select((s) => s.permissionStatus));
     final query =
         ref.watch(pdfLibraryControllerProvider.select((s) => s.query));
     final filter =
@@ -62,14 +59,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.watch(pdfLibraryControllerProvider.select((s) => s.items));
     ref.watch(pdfLibraryControllerProvider.select((s) => s.sortField));
     ref.watch(pdfLibraryControllerProvider.select((s) => s.sortDirection));
-
-    // Permission gate
-    if (!loading && permissionStatus != StoragePermissionStatus.granted) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('ArcPDF')),
-        body: PermissionScreen(status: permissionStatus),
-      );
-    }
 
     final items = ctrl.filteredItems();
     final useGrid = ref.watch(settingsControllerProvider).useGrid;
