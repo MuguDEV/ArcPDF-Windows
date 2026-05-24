@@ -76,11 +76,10 @@ jobs:
 
       - name: Rename & Organize Artifacts
         if: env.SKIP_RELEASE == 'false'
-        shell: bash
+        shell: pwsh
         run: |
-          mkdir -p release
-          cd build/windows/x64/runner/Release
-          zip -r "../../../../../release/ArcPDF-v${{ env.VERSION }}-Windows.zip" ./*
+          New-Item -ItemType Directory -Force -Path release
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "release\ArcPDF-v${{ env.VERSION }}-Windows.zip" -Force
 
       - name: Upload Artifacts
         if: env.SKIP_RELEASE == 'false'
