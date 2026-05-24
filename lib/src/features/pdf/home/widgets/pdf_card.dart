@@ -4,6 +4,12 @@ import 'package:intl/intl.dart';
 import '../../../settings/settings_controller.dart';
 import '../../application/pdf_library_controller.dart';
 import '../../domain/pdf_file_item.dart';
+import 'dart:io';
+
+import 'package:hugeicons/hugeicons.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'rename_dialog.dart';
 import 'pdf_thumbnail.dart';
 
 class PdfCard extends ConsumerStatefulWidget {
@@ -114,13 +120,39 @@ class _PdfCardState extends ConsumerState<PdfCard> {
               const SizedBox(width: 8),
 
               // Trailing action (like favorite or a menu)
-              IconButton(
-                key: ValueKey(isFav),
-                onPressed: widget.onFavorite,
-                icon: Icon(
-                  isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: isFav ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
+              PopupMenuButton<String>(
+                icon: const Icon(HugeIcons.strokeRoundedMoreVerticalCircle01),
+                onSelected: (value) async {
+                  if (value == 'favorite') {
+                    widget.onFavorite();
+                  } else if (value == 'rename') {
+                    final newName = await showRenameDialog(context, widget.item.name);
+                    if (newName != null && newName.isNotEmpty && mounted) {
+                      final success = await ref.read(pdfLibraryControllerProvider.notifier).renameFile(widget.item, newName);
+                      if (!success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Failed to rename file.')),
+                        );
+                      }
+                    }
+                  } else if (value == 'show_folder') {
+                    if (Platform.isWindows) {
+                      Process.run('explorer.exe', ['/select,', widget.item.path]);
+                    } else if (Platform.isMacOS) {
+                      Process.run('open', ['-R', widget.item.path]);
+                    } else if (Platform.isLinux) {
+                      Process.run('xdg-open', [File(widget.item.path).parent.path]);
+                    }
+                  } else if (value == 'share') {
+                    Share.shareXFiles([XFile(widget.item.path)]);
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'favorite', child: Text(isFav ? 'Unfavorite' : 'Favorite')),
+                  const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                  const PopupMenuItem(value: 'show_folder', child: Text('Show in Folder')),
+                  const PopupMenuItem(value: 'share', child: Text('Share')),
+                ],
               ),
             ],
           ),

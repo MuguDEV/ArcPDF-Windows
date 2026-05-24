@@ -15,6 +15,8 @@ import 'package:printing/printing.dart';
 import '../../settings/settings_controller.dart';
 import '../domain/pdf_file_item.dart';
 import '../data/reading_progress_repository.dart';
+import 'package:window_manager/window_manager.dart';
+
 import '../application/pdf_library_controller.dart';
 
 class PdfViewerScreen extends ConsumerStatefulWidget {
@@ -29,6 +31,7 @@ class PdfViewerScreen extends ConsumerStatefulWidget {
 class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> with WidgetsBindingObserver {
   final PdfViewerController _pdfViewerController = PdfViewerController();
   late final PdfTextSearcher _textSearcher;
+  final FocusNode _focusNode = FocusNode();
 
   Timer? _hideTimer;
   bool _showToolbar = true;
@@ -67,6 +70,7 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> with WidgetsB
 
   @override
   void dispose() {
+    _focusNode.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _pdfViewerController.removeListener(_onPdfViewerChanged);
     _textSearcher.removeListener(_onSearcherChanged);
@@ -184,8 +188,60 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> with WidgetsB
     final isLiquidGlass = ref.watch(settingsControllerProvider.select((s) => s.useLiquidGlass));
     final repo = ref.read(readingProgressRepositoryProvider);
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.equal, control: true): () {
+          _pdfViewerController.zoomUp();
+        },
+        const SingleActivator(LogicalKeyboardKey.numpadAdd, control: true): () {
+          _pdfViewerController.zoomUp();
+        },
+        const SingleActivator(LogicalKeyboardKey.minus, control: true): () {
+          _pdfViewerController.zoomDown();
+        },
+        const SingleActivator(LogicalKeyboardKey.numpadSubtract, control: true): () {
+          _pdfViewerController.zoomDown();
+        },
+        const SingleActivator(LogicalKeyboardKey.digit0, control: true): () {
+          _pdfViewerController.setZoom(
+            Offset.zero,
+            1.0
+          );
+        },
+        const SingleActivator(LogicalKeyboardKey.numpad0, control: true): () {
+          _pdfViewerController.setZoom(
+            Offset.zero,
+            1.0
+          );
+        }
+      },
+      child: Focus(
+      autofocus: true,
+      focusNode: _focusNode,
+      child: Scaffold(
       backgroundColor: theme.colorScheme.surface,
+      appBar: (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(36),
+              child: DragToMoveArea(
+                child: Container(
+                  height: 36,
+                  color: theme.colorScheme.surface,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16),
+                      Text(widget.item.name, style: const TextStyle(fontSize: 12)),
+                      const Spacer(),
+                      WindowCaption(
+                        brightness: theme.brightness,
+                        backgroundColor: Colors.transparent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
           // 1. PDF Viewer
@@ -598,6 +654,8 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> with WidgetsB
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 

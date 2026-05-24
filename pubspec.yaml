@@ -34,6 +34,8 @@ dependencies:
   printing: ^5.14.3
   file_picker: ^11.0.2
   flutter_file_dialog: ^3.0.3
+  window_manager: ^0.5.1
+  desktop_drop: ^0.7.1
 
 dev_dependencies:
   flutter_test:
