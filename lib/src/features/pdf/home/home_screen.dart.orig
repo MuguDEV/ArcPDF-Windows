@@ -78,21 +78,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       floatingActionButton: _showScrollToTop
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 90.0), // Elevate above the bottom navigation bar
-              child: FloatingActionButton(
-                onPressed: () {
-                  _scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.fastOutSlowIn,
-                  );
-                },
-                backgroundColor: theme.colorScheme.secondaryContainer,
-                foregroundColor: theme.colorScheme.onSecondaryContainer,
-                elevation: 4,
-                child: const Icon(Icons.arrow_upward_rounded),
-              ),
+          ? FloatingActionButton(
+              onPressed: () {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.fastOutSlowIn,
+                );
+              },
+              child: const Icon(Icons.arrow_upward_rounded),
             )
           : null,
       body: CustomScrollView(
@@ -308,7 +302,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             selected: selected,
                             onSelected: (_) => ctrl.setFilter(f),
                             label: Text(_label(f)),
-                            labelStyle: const TextStyle(height: 1.0),
+                            labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             showCheckmark: false,
                           ),
                         ),
@@ -339,7 +334,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               subtitle: query.isNotEmpty
                   ? 'Try a different search term or filter.'
                   : 'No PDFs found. Add a PDF to start reading',
-              animated: true,
             ),
           )
         else if (filter == PdfFilter.folders)
@@ -409,7 +403,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
         ),
       ],
-      ),
     );
   }
 
