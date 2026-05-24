@@ -9,8 +9,6 @@ import 'package:flutter/services.dart';
 import '../data/pdf_scanner_service.dart';
 import '../domain/pdf_file_item.dart';
 
-export '../data/pdf_scanner_service.dart' show StoragePermissionStatus;
-
 enum PdfFilter { all, recent, downloads, large, folders }
 
 enum PdfSortField { name, date, size }
@@ -27,7 +25,6 @@ class PdfLibraryState {
     this.sortDirection = PdfSortDirection.descending,
     this.favorites = const {},
     this.recents = const {},
-    this.permissionStatus = StoragePermissionStatus.granted,
   });
 
   final bool loading;
@@ -38,7 +35,6 @@ class PdfLibraryState {
   final PdfSortDirection sortDirection;
   final Set<String> favorites;
   final Map<String, DateTime> recents; // path → openedAt
-  final StoragePermissionStatus permissionStatus;
 
   PdfLibraryState copyWith({
     bool? loading,
@@ -49,7 +45,6 @@ class PdfLibraryState {
     PdfSortDirection? sortDirection,
     Set<String>? favorites,
     Map<String, DateTime>? recents,
-    StoragePermissionStatus? permissionStatus,
   }) {
     return PdfLibraryState(
       loading: loading ?? this.loading,
@@ -60,7 +55,6 @@ class PdfLibraryState {
       sortDirection: sortDirection ?? this.sortDirection,
       favorites: favorites ?? this.favorites,
       recents: recents ?? this.recents,
-      permissionStatus: permissionStatus ?? this.permissionStatus,
     );
   }
 }
@@ -104,13 +98,12 @@ class PdfLibraryController extends StateNotifier<PdfLibraryState> {
     );
   }
 
-  Future<void> refresh({bool requestPermission = false}) async {
+  Future<void> refresh() async {
     state = state.copyWith(loading: true);
-    final result = await _scanner.scan(requestPermission: requestPermission);
+    final result = await _scanner.scan();
     state = state.copyWith(
       loading: false,
       items: result.files,
-      permissionStatus: result.permissionStatus,
     );
   }
 

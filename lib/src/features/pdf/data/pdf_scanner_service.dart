@@ -7,26 +7,13 @@ import 'package:path_provider/path_provider.dart';
 import '../../../core/utils/logger.dart';
 import '../domain/pdf_file_item.dart';
 
-enum StoragePermissionStatus {
-  granted,
-  denied,
-  permanentlyDenied,
-}
-
 class ScanResult {
-  const ScanResult({required this.files, required this.permissionStatus});
+  const ScanResult({required this.files});
   final List<PdfFileItem> files;
-  final StoragePermissionStatus permissionStatus;
 }
 
 class PdfScannerService {
   const PdfScannerService();
-
-  Future<StoragePermissionStatus> requestPermission() async {
-    // Desktop platforms (Windows) do not require explicit permission requests
-    // like Android's MANAGE_EXTERNAL_STORAGE.
-    return StoragePermissionStatus.granted;
-  }
 
   Future<List<String>> _roots() async {
     final roots = <String>{};
@@ -58,7 +45,6 @@ class PdfScannerService {
 
     return ScanResult(
       files: files.sorted((a, b) => b.lastModified.compareTo(a.lastModified)),
-      permissionStatus: StoragePermissionStatus.granted,
     );
   }
 }
