@@ -8,8 +8,18 @@ import 'package:hugeicons/hugeicons.dart';
 import '../pdf/favorites/favorites_screen.dart';
 import '../pdf/home/home_screen.dart';
 import '../pdf/recent/recent_screen.dart';
+import 'dart:io';
+
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:window_manager/window_manager.dart';
+
+import '../pdf/domain/pdf_file_item.dart';
+import '../pdf/viewer/pdf_viewer_screen.dart';
+import '../pdf/application/pdf_library_controller.dart';
 import '../settings/settings_screen.dart';
 import '../splash/splash_screen.dart';
+import '../tools/tools_screen.dart';
 import 'navigation_controller.dart';
 
 class AppShell extends ConsumerWidget {
@@ -22,19 +32,90 @@ class AppShell extends ConsumerWidget {
 
     if (!doneSplash) return const SplashScreen();
 
-    return Scaffold(
-      // IndexedStack preserves all tab states + scroll positions
-      body: Stack(
-        children: [
-          _buildOffstage(0, nav.index, const HomeScreen()),
-          _buildOffstage(1, nav.index, const FavoritesScreen()),
-          _buildOffstage(2, nav.index, const RecentScreen()),
-          _buildOffstage(3, nav.index, const SettingsScreen()),
-        ],
+    final theme = Theme.of(context);
+    final ctrl = ref.read(pdfLibraryControllerProvider.notifier);
+
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyO, control: true): () {
+          _openFilePicker(context, ctrl);
+        },
+      },
+      child: Focus(
+      autofocus: true,
+      child: DropTarget(
+      onDragDone: (detail) async {
+        if (detail.files.isNotEmpty) {
+          final file = detail.files.first;
+          if (file.path.toLowerCase().endsWith('.pdf')) {
+            final fileEntity = File(file.path);
+            final pdfItem = PdfFileItem.fromFile(fileEntity, isEncrypted: false, isCorrupted: false);
+
+            await ctrl.markRecent(pdfItem);
+            if (!context.mounted) return;
+            await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => PdfViewerScreen(item: pdfItem))
+            );
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(36),
+                child: DragToMoveArea(
+                  child: Container(
+                    height: 36,
+                    color: theme.colorScheme.surface,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 16),
+                        const Text('ArcPDF', style: TextStyle(fontSize: 12)),
+                        const Spacer(),
+                        WindowCaption(
+                          brightness: theme.brightness,
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            : null,
+        // IndexedStack preserves all tab states + scroll positions
+        body: Stack(
+          children: [
+            _buildOffstage(0, nav.index, const HomeScreen()),
+            _buildOffstage(1, nav.index, const ToolsScreen()),
+            _buildOffstage(2, nav.index, const FavoritesScreen()),
+            _buildOffstage(3, nav.index, const RecentScreen()),
+            _buildOffstage(4, nav.index, const SettingsScreen()),
+          ],
+        ),
+        extendBody: true,
+        bottomNavigationBar: _ArcNavBar(selectedIndex: nav.index),
       ),
-      extendBody: true,
-      bottomNavigationBar: _ArcNavBar(selectedIndex: nav.index),
+      ),
+      ),
     );
+  }
+
+  Future<void> _openFilePicker(BuildContext context, PdfLibraryController ctrl) async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null && result.files.single.path != null) {
+      final path = result.files.single.path!;
+      final fileEntity = File(path);
+      final pdfItem = PdfFileItem.fromFile(fileEntity, isEncrypted: false, isCorrupted: false);
+      await ctrl.markRecent(pdfItem);
+      if (context.mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => PdfViewerScreen(item: pdfItem)),
+        );
+      }
+    }
   }
 
   Widget _buildOffstage(int tabIndex, int currentIndex, Widget child) {
@@ -100,9 +181,10 @@ class _ArcNavBar extends ConsumerWidget {
               labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
               destinations: [
                 _buildDest(HugeIcons.strokeRoundedHome01, 'Home', 0, isDark, theme),
-                _buildDest(HugeIcons.strokeRoundedFavourite, 'Favorites', 1, isDark, theme),
-                _buildDest(HugeIcons.strokeRoundedClock01, 'Recent', 2, isDark, theme),
-                _buildDest(HugeIcons.strokeRoundedSettings01, 'Settings', 3, isDark, theme),
+                _buildDest(HugeIcons.strokeRoundedDashboardSquare01, 'Tools', 1, isDark, theme),
+                _buildDest(HugeIcons.strokeRoundedFavourite, 'Favorites', 2, isDark, theme),
+                _buildDest(HugeIcons.strokeRoundedClock01, 'Recent', 3, isDark, theme),
+                _buildDest(HugeIcons.strokeRoundedSettings01, 'Settings', 4, isDark, theme),
               ],
               onDestinationSelected: (i) {
                 if (i != selectedIndex) {
