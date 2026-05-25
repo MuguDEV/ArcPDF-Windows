@@ -2,7 +2,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'dart:io';
+import 'dart:convert';
 
 import 'pdf_tools_service.dart';
 
@@ -192,14 +193,7 @@ class ToolsController {
       if (context.mounted) Navigator.pop(context); // Close loading
 
       // Save as .txt
-      final params = SaveFileDialogParams(
-        data: Uint8List.fromList(text.codeUnits),
-        fileName: '${result.files.single.name.replaceAll('.pdf', '')}_text.txt',
-      );
-      final filePath = await FlutterFileDialog.saveFile(params: params);
-      if (filePath != null && context.mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Text saved successfully!')));
-      }
+      await _saveFile(context, Uint8List.fromList(utf8.encode(text)), '${result.files.single.name.replaceAll('.pdf', '')}_text.txt');
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
@@ -289,10 +283,17 @@ class ToolsController {
   }
 
   static Future<void> _saveFile(BuildContext context, Uint8List bytes, String defaultName) async {
-    final params = SaveFileDialogParams(data: bytes, fileName: defaultName);
-    final filePath = await FlutterFileDialog.saveFile(params: params);
-    if (filePath != null && context.mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully!')));
+    final savePath = await FilePicker.saveFile(
+      dialogTitle: 'Save File',
+      fileName: defaultName,
+    );
+
+    if (savePath != null) {
+      final file = File(savePath);
+      await file.writeAsBytes(bytes);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved successfully!')));
+      }
     }
   }
 
